@@ -21,21 +21,15 @@ class _CadastroProdutoState extends State<CadastroProduto> {
   }
 
   Future<void> _loadProdutos() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? produtosJson = prefs.getString('produtos');
-    if (produtosJson != null) {
-      final List<dynamic> produtosList = jsonDecode(produtosJson);
-      _controladora.lista.clear();
-      _controladora.lista.addAll(produtosList.map((p) => Produto.fromJson(p)).toList());
-      setState(() {});
-    }
+    await _controladora.loadProdutos();
+    setState(() {});
   }
 
-  Future<void> _saveProdutos() async {
+  /*Future<void> _saveProdutos() async {
     final prefs = await SharedPreferences.getInstance();
     final String produtosJson = jsonEncode(_controladora.lista.map((p) => p.toJson()).toList());
     await prefs.setString('produtos', produtosJson);
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -60,44 +54,47 @@ class _CadastroProdutoState extends State<CadastroProduto> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FormularioProduto(
-                        controladora: _controladora,
-                        produto: Produto.nova(),
-                      ),
+                      builder:
+                          (context) => FormularioProduto(
+                            controladora: _controladora,
+                            produto: Produto.nova(),
+                          ),
                     ),
                   );
-                  await _saveProdutos();
                   setState(() {});
                 },
                 child: const Text("Criar novo produto"),
               ),
             ),
             Expanded(
-              child: _controladora.lista.isEmpty
-                  ? const Center(child: Text("Nenhum produto cadastrado"))
-                  : ListView.builder(
-                      itemCount: _controladora.lista.length,
-                      itemBuilder: (context, index) {
-                        final produto = _controladora.lista[index];
-                        return ListTile(
-                          title: Text('${produto.nome} (${produto.unidade})'),
-                          subtitle: Text('Preço: R\$${produto.precoVenda.toStringAsFixed(2)} - Estoque: ${produto.quantidadeEstoque}'),
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FormularioProduto(
-                                  controladora: _controladora,
-                                  produto: produto,
+              child:
+                  _controladora.lista.isEmpty
+                      ? const Center(child: Text("Nenhum produto cadastrado"))
+                      : ListView.builder(
+                        itemCount: _controladora.lista.length,
+                        itemBuilder: (context, index) {
+                          final produto = _controladora.lista[index];
+                          return ListTile(
+                            title: Text('${produto.nome} (${produto.unidade})'),
+                            subtitle: Text(
+                              'Preço: R\$${produto.precoVenda.toStringAsFixed(2)} - Estoque: ${produto.quantidadeEstoque}',
+                            ),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => FormularioProduto(
+                                        controladora: _controladora,
+                                        produto: Produto.nova(),
+                                      ),
                                 ),
-                              ),
-                            );
-                            await _saveProdutos();
-                            setState(() {});
-                          },
-                        );
-                      },
-                    ),
+                              );
+                              setState(() {});
+                            },
+                          );
+                        },
+                      ),
             ),
           ],
         ),
@@ -135,11 +132,21 @@ class _FormularioProdutoState extends State<FormularioProduto> {
     super.initState();
     _controladorNome = TextEditingController(text: widget.produto.nome);
     _controladorUnidade = TextEditingController(text: widget.produto.unidade);
-    _controladorQuantidadeEstoque = TextEditingController(text: widget.produto.quantidadeEstoque.toString());
-    _controladorPrecoVenda = TextEditingController(text: widget.produto.precoVenda.toString());
-    _controladorStatus = TextEditingController(text: widget.produto.status.toString());
-    _controladorCusto = TextEditingController(text: widget.produto.custo?.toString() ?? '');
-    _controladorCodigoBarra = TextEditingController(text: widget.produto.codigoBarra ?? '');
+    _controladorQuantidadeEstoque = TextEditingController(
+      text: widget.produto.quantidadeEstoque.toString(),
+    );
+    _controladorPrecoVenda = TextEditingController(
+      text: widget.produto.precoVenda.toString(),
+    );
+    _controladorStatus = TextEditingController(
+      text: widget.produto.status.toString(),
+    );
+    _controladorCusto = TextEditingController(
+      text: widget.produto.custo?.toString() ?? '',
+    );
+    _controladorCodigoBarra = TextEditingController(
+      text: widget.produto.codigoBarra ?? '',
+    );
   }
 
   @override
@@ -157,7 +164,11 @@ class _FormularioProdutoState extends State<FormularioProduto> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Cadastro de ${widget.produto.nome.isEmpty ? 'Novo Produto' : widget.produto.nome}')),
+      appBar: AppBar(
+        title: Text(
+          'Cadastro de ${widget.produto.nome.isEmpty ? 'Novo Produto' : widget.produto.nome}',
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -176,7 +187,9 @@ class _FormularioProdutoState extends State<FormularioProduto> {
               ),
               TextFormField(
                 controller: _controladorUnidade,
-                decoration: const InputDecoration(labelText: 'Unidade (un, cx, kg, lt, ml) *'),
+                decoration: const InputDecoration(
+                  labelText: 'Unidade (un, cx, kg, lt, ml) *',
+                ),
                 validator: (valor) {
                   if (valor == null || valor.isEmpty) {
                     return 'Informe a unidade';
@@ -189,7 +202,9 @@ class _FormularioProdutoState extends State<FormularioProduto> {
               ),
               TextFormField(
                 controller: _controladorQuantidadeEstoque,
-                decoration: const InputDecoration(labelText: 'Quantidade em Estoque *'),
+                decoration: const InputDecoration(
+                  labelText: 'Quantidade em Estoque *',
+                ),
                 keyboardType: TextInputType.number,
                 validator: (valor) {
                   if (valor == null || valor.isEmpty) {
@@ -203,13 +218,16 @@ class _FormularioProdutoState extends State<FormularioProduto> {
               ),
               TextFormField(
                 controller: _controladorPrecoVenda,
-                decoration: const InputDecoration(labelText: 'Preço de Venda *'),
+                decoration: const InputDecoration(
+                  labelText: 'Preço de Venda *',
+                ),
                 keyboardType: TextInputType.number,
                 validator: (valor) {
                   if (valor == null || valor.isEmpty) {
                     return 'Informe o preço de venda';
                   }
-                  if (double.tryParse(valor) == null || double.parse(valor) <= 0) {
+                  if (double.tryParse(valor) == null ||
+                      double.parse(valor) <= 0) {
                     return 'Preço deve ser maior que zero';
                   }
                   return null;
@@ -217,13 +235,16 @@ class _FormularioProdutoState extends State<FormularioProduto> {
               ),
               TextFormField(
                 controller: _controladorStatus,
-                decoration: const InputDecoration(labelText: 'Status (0-Ativo, 1-Inativo) *'),
+                decoration: const InputDecoration(
+                  labelText: 'Status (0-Ativo, 1-Inativo) *',
+                ),
                 keyboardType: TextInputType.number,
                 validator: (valor) {
                   if (valor == null || valor.isEmpty) {
                     return 'Informe o status';
                   }
-                  if (int.tryParse(valor) == null || ![0, 1].contains(int.parse(valor))) {
+                  if (int.tryParse(valor) == null ||
+                      ![0, 1].contains(int.parse(valor))) {
                     return 'Status deve ser 0 (Ativo) ou 1 (Inativo)';
                   }
                   return null;
@@ -234,7 +255,9 @@ class _FormularioProdutoState extends State<FormularioProduto> {
                 decoration: const InputDecoration(labelText: 'Custo'),
                 keyboardType: TextInputType.number,
                 validator: (valor) {
-                  if (valor != null && valor.isNotEmpty && double.tryParse(valor) == null) {
+                  if (valor != null &&
+                      valor.isNotEmpty &&
+                      double.tryParse(valor) == null) {
                     return 'Custo deve ser um número válido';
                   }
                   return null;
@@ -254,7 +277,9 @@ class _FormularioProdutoState extends State<FormularioProduto> {
                         widget.controladora.excluirProduto(widget.produto);
                         Navigator.pop(context);
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
                       child: const Text('Excluir'),
                     ),
                   ElevatedButton(
@@ -264,11 +289,19 @@ class _FormularioProdutoState extends State<FormularioProduto> {
                           id: widget.produto.id,
                           nome: _controladorNome.text,
                           unidade: _controladorUnidade.text,
-                          quantidadeEstoque: int.parse(_controladorQuantidadeEstoque.text),
+                          quantidadeEstoque: int.parse(
+                            _controladorQuantidadeEstoque.text,
+                          ),
                           precoVenda: double.parse(_controladorPrecoVenda.text),
                           status: int.parse(_controladorStatus.text),
-                          custo: _controladorCusto.text.isEmpty ? null : double.parse(_controladorCusto.text),
-                          codigoBarra: _controladorCodigoBarra.text.isEmpty ? null : _controladorCodigoBarra.text,
+                          custo:
+                              _controladorCusto.text.isEmpty
+                                  ? null
+                                  : double.parse(_controladorCusto.text),
+                          codigoBarra:
+                              _controladorCodigoBarra.text.isEmpty
+                                  ? null
+                                  : _controladorCodigoBarra.text,
                         );
                         widget.controladora.salvarProduto(produtoAtualizado);
                         Navigator.pop(context);

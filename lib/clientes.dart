@@ -3,6 +3,7 @@ import 'package:app_n1/controladoras/controladoraCliente.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class CadastroCliente extends StatefulWidget {
   const CadastroCliente({super.key});
@@ -21,21 +22,15 @@ class _CadastroClienteState extends State<CadastroCliente> {
   }
 
   Future<void> _loadClientes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? clientesJson = prefs.getString('clientes');
-    if (clientesJson != null) {
-      final List<dynamic> clientesList = jsonDecode(clientesJson);
-      _controladora.lista.clear();
-      _controladora.lista.addAll(clientesList.map((c) => Cliente.fromJson(c)).toList());
-      setState(() {});
-    }
+    await _controladora.loadClientes();
+    setState(() {});
   }
 
-  Future<void> _saveClientes() async {
+  /*Future<void> _saveClientes() async {
     final prefs = await SharedPreferences.getInstance();
     final String clientesJson = jsonEncode(_controladora.lista.map((c) => c.toJson()).toList());
     await prefs.setString('clientes', clientesJson);
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -60,44 +55,47 @@ class _CadastroClienteState extends State<CadastroCliente> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FormularioCliente(
-                        controladora: _controladora,
-                        cliente: Cliente.novo(),
-                      ),
+                      builder:
+                          (context) => FormularioCliente(
+                            controladora: _controladora,
+                            cliente: Cliente.novo(),
+                          ),
                     ),
                   );
-                  await _saveClientes();
                   setState(() {});
                 },
                 child: const Text("Criar novo cliente"),
               ),
             ),
             Expanded(
-              child: _controladora.lista.isEmpty
-                  ? const Center(child: Text("Nenhum cliente cadastrado"))
-                  : ListView.builder(
-                      itemCount: _controladora.lista.length,
-                      itemBuilder: (context, index) {
-                        final cliente = _controladora.lista[index];
-                        return ListTile(
-                          title: Text(cliente.nome),
-                          subtitle: Text('CPF/CNPJ: ${cliente.cpfCnpj} - Tipo: ${cliente.tipo == 'F' ? 'Física' : 'Jurídica'}'),
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FormularioCliente(
-                                  controladora: _controladora,
-                                  cliente: cliente,
+              child:
+                  _controladora.lista.isEmpty
+                      ? const Center(child: Text("Nenhum cliente cadastrado"))
+                      : ListView.builder(
+                        itemCount: _controladora.lista.length,
+                        itemBuilder: (context, index) {
+                          final cliente = _controladora.lista[index];
+                          return ListTile(
+                            title: Text(cliente.nome),
+                            subtitle: Text(
+                              'CPF/CNPJ: ${cliente.cpfCnpj} - Tipo: ${cliente.tipo == 'F' ? 'Física' : 'Jurídica'}',
+                            ),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => FormularioCliente(
+                                        controladora: _controladora,
+                                        cliente: Cliente.novo(),
+                                      ),
                                 ),
-                              ),
-                            );
-                            await _saveClientes();
-                            setState(() {});
-                          },
-                        );
-                      },
-                    ),
+                              );
+                              setState(() {});
+                            },
+                          );
+                        },
+                      ),
             ),
           ],
         ),
@@ -140,12 +138,59 @@ class _FormularioClienteState extends State<FormularioCliente> {
     _controladorTipo = TextEditingController(text: widget.cliente.tipo);
     _controladorCpfCnpj = TextEditingController(text: widget.cliente.cpfCnpj);
     _controladorEmail = TextEditingController(text: widget.cliente.email ?? '');
-    _controladorTelefone = TextEditingController(text: widget.cliente.telefone ?? '');
+    _controladorTelefone = TextEditingController(
+      text: widget.cliente.telefone ?? '',
+    );
     _controladorCep = TextEditingController(text: widget.cliente.cep ?? '');
-    _controladorEndereco = TextEditingController(text: widget.cliente.endereco ?? '');
-    _controladorBairro = TextEditingController(text: widget.cliente.bairro ?? '');
-    _controladorCidade = TextEditingController(text: widget.cliente.cidade ?? '');
+    _controladorEndereco = TextEditingController(
+      text: widget.cliente.endereco ?? '',
+    );
+    _controladorBairro = TextEditingController(
+      text: widget.cliente.bairro ?? '',
+    );
+    _controladorCidade = TextEditingController(
+      text: widget.cliente.cidade ?? '',
+    );
     _controladorUf = TextEditingController(text: widget.cliente.uf ?? '');
+  }
+
+  Future<void> _buscarCep() async {
+    final cep = _controladorCep.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cep.length != 8) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('CEP inválido')));
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://viacep.com.br/ws/$cep/json/'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['erro'] == true) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('CEP não encontrado')));
+          return;
+        }
+        setState(() {
+          _controladorEndereco.text = data['logradouro'] ?? '';
+          _controladorBairro.text = data['bairro'] ?? '';
+          _controladorCidade.text = data['localidade'] ?? '';
+          _controladorUf.text = data['uf'] ?? '';
+        });
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao buscar CEP')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro de conexão')));
+    }
   }
 
   @override
@@ -166,13 +211,19 @@ class _FormularioClienteState extends State<FormularioCliente> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Cadastro de ${widget.cliente.nome.isEmpty ? 'Novo Cliente' : widget.cliente.nome}')),
+      appBar: AppBar(
+        title: Text(
+          'Cadastro de ${widget.cliente.nome.isEmpty ? 'Novo Cliente' : widget.cliente.nome}',
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _chaveFormulario,
           child: ListView(
             children: [
+              ElevatedButton(onPressed: _buscarCep, child: Text('Buscar CEP')),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _controladorNome,
                 decoration: const InputDecoration(labelText: 'Nome *'),
@@ -185,7 +236,9 @@ class _FormularioClienteState extends State<FormularioCliente> {
               ),
               TextFormField(
                 controller: _controladorTipo,
-                decoration: const InputDecoration(labelText: 'Tipo (F - Física, J - Jurídica) *'),
+                decoration: const InputDecoration(
+                  labelText: 'Tipo (F - Física, J - Jurídica) *',
+                ),
                 validator: (valor) {
                   if (valor == null || valor.isEmpty) {
                     return 'Informe o tipo';
@@ -247,7 +300,9 @@ class _FormularioClienteState extends State<FormularioCliente> {
                         widget.controladora.excluirCliente(widget.cliente);
                         Navigator.pop(context);
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
                       child: const Text('Excluir'),
                     ),
                   ElevatedButton(
@@ -258,13 +313,34 @@ class _FormularioClienteState extends State<FormularioCliente> {
                           nome: _controladorNome.text,
                           tipo: _controladorTipo.text,
                           cpfCnpj: _controladorCpfCnpj.text,
-                          email: _controladorEmail.text.isEmpty ? null : _controladorEmail.text,
-                          telefone: _controladorTelefone.text.isEmpty ? null : _controladorTelefone.text,
-                          cep: _controladorCep.text.isEmpty ? null : _controladorCep.text,
-                          endereco: _controladorEndereco.text.isEmpty ? null : _controladorEndereco.text,
-                          bairro: _controladorBairro.text.isEmpty ? null : _controladorBairro.text,
-                          cidade: _controladorCidade.text.isEmpty ? null : _controladorCidade.text,
-                          uf: _controladorUf.text.isEmpty ? null : _controladorUf.text,
+                          email:
+                              _controladorEmail.text.isEmpty
+                                  ? null
+                                  : _controladorEmail.text,
+                          telefone:
+                              _controladorTelefone.text.isEmpty
+                                  ? null
+                                  : _controladorTelefone.text,
+                          cep:
+                              _controladorCep.text.isEmpty
+                                  ? null
+                                  : _controladorCep.text,
+                          endereco:
+                              _controladorEndereco.text.isEmpty
+                                  ? null
+                                  : _controladorEndereco.text,
+                          bairro:
+                              _controladorBairro.text.isEmpty
+                                  ? null
+                                  : _controladorBairro.text,
+                          cidade:
+                              _controladorCidade.text.isEmpty
+                                  ? null
+                                  : _controladorCidade.text,
+                          uf:
+                              _controladorUf.text.isEmpty
+                                  ? null
+                                  : _controladorUf.text,
                         );
                         widget.controladora.salvarCliente(clienteAtualizado);
                         Navigator.pop(context);

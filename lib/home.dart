@@ -28,9 +28,9 @@ class TelaInicial extends StatelessWidget {
                 Text(
                   'Bem-vindo ao Sistema de Vendas',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade900,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade900,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
@@ -54,6 +54,27 @@ class TelaInicial extends StatelessWidget {
                   'CADASTRO_USUARIO',
                   Icons.group_add,
                 ),
+                const SizedBox(height: 16),
+                _criarBotaoNavegacao(
+                  context,
+                  'Cadastrar Pedido',
+                  'CADASTRO_PEDIDO',
+                  Icons.shopping_cart,
+                ),
+                const SizedBox(height: 16),
+                _criarBotaoNavegacao(
+                  context,
+                  'Sincronizar Dados',
+                  'SINCRONIZACAO',
+                  Icons.sync,
+                ),
+                const SizedBox(height: 16),
+                _criarBotaoNavegacao(
+                  context,
+                  'Configuração',
+                  'CONFIGURACAO',
+                  Icons.settings,
+                ),
               ],
             ),
           ),
@@ -62,9 +83,12 @@ class TelaInicial extends StatelessWidget {
     );
   }
 
-  // Cria botões estilizados para navegação
   Widget _criarBotaoNavegacao(
-      BuildContext context, String rotulo, String rota, IconData icone) {
+    BuildContext context,
+    String rotulo,
+    String rota,
+    IconData icone,
+  ) {
     return ElevatedButton.icon(
       onPressed: () {
         Navigator.pushReplacementNamed(context, rota);

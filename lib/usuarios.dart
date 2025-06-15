@@ -22,21 +22,15 @@ class CadastroUsuarioState extends State<CadastroUsuario> {
   }
 
   Future<void> _loadPessoas() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? pessoasJson = prefs.getString('pessoas');
-    if (pessoasJson != null) {
-      final List<dynamic> pessoasList = jsonDecode(pessoasJson);
-      _control.lista.clear();
-      _control.lista.addAll(pessoasList.map((p) => Pessoa.fromJson(p)).toList());
-      setState(() {});
-    }
+    await _control.loadPessoas();
+    setState(() {});
   }
 
-  Future<void> _savePessoas() async {
+  /*Future<void> _savePessoas() async {
     final prefs = await SharedPreferences.getInstance();
     final String pessoasJson = jsonEncode(_control.lista.map((p) => p.toJson()).toList());
     await prefs.setString('pessoas', pessoasJson);
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -64,21 +58,22 @@ class CadastroUsuarioState extends State<CadastroUsuario> {
               ),
             ),
             Expanded(
-              child: _control.lista.isEmpty
-                  ? const Center(child: Text("Nenhum usuário cadastrado"))
-                  : ListView.builder(
-                      itemCount: _control.lista.length,
-                      itemBuilder: (context, index) {
-                        var pessoa = _control.lista[index];
-                        return ListTile(
-                          title: Text(pessoa.nomeCompleto),
-                          subtitle: Text('Usuário: ${pessoa.user}'),
-                          onTap: () async {
-                            await abrirPessoa(pessoa);
-                          },
-                        );
-                      },
-                    ),
+              child:
+                  _control.lista.isEmpty
+                      ? const Center(child: Text("Nenhum usuário cadastrado"))
+                      : ListView.builder(
+                        itemCount: _control.lista.length,
+                        itemBuilder: (context, index) {
+                          var pessoa = _control.lista[index];
+                          return ListTile(
+                            title: Text(pessoa.nomeCompleto),
+                            subtitle: Text('Usuário: ${pessoa.user}'),
+                            onTap: () async {
+                              await abrirPessoa(pessoa);
+                            },
+                          );
+                        },
+                      ),
             ),
           ],
         ),
@@ -91,7 +86,6 @@ class CadastroUsuarioState extends State<CadastroUsuario> {
       context,
       MaterialPageRoute(builder: (context) => TelaForm(_control, pessoa)),
     );
-    await _savePessoas();
     setState(() {});
   }
 }
@@ -136,7 +130,9 @@ class _TelaFormState extends State<TelaForm> {
     Pessoa p = widget.pessoa;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Cadastro de ${p.nome.isEmpty ? "Novo Usuário" : p.nome}')),
+      appBar: AppBar(
+        title: Text('Cadastro de ${p.nome.isEmpty ? "Novo Usuário" : p.nome}'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -193,7 +189,9 @@ class _TelaFormState extends State<TelaForm> {
                         widget.control.excluirPessoa(p);
                         Navigator.pop(context);
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
                       child: const Text('Excluir'),
                     ),
                   ElevatedButton(
@@ -202,7 +200,10 @@ class _TelaFormState extends State<TelaForm> {
                         final pessoaAtualizada = Pessoa(
                           id: p.id,
                           nome: _controleNome.text,
-                          sobrenome: _controleSobrenome.text.isEmpty ? null : _controleSobrenome.text,
+                          sobrenome:
+                              _controleSobrenome.text.isEmpty
+                                  ? null
+                                  : _controleSobrenome.text,
                           user: _controleUser.text,
                           senha: _controleSenha.text,
                         );
